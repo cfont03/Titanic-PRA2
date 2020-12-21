@@ -1,5 +1,5 @@
 ---
-title: "RPUBS"
+title: "Estudi Supervivència Titànic"
 subtitle: "Tipologia i cicle de vida de les dades"
 author: "Jordi Dil i Giró & Carlota Font Castell"
 date: '`r format(Sys.Date(),"%e de %B, %Y")`'
