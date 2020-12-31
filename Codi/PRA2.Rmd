@@ -48,12 +48,20 @@ library(caTools)
 library(oddsratio)
 library(GGally)
 library(caret)
+library(data.table)
 ```
 
 ```{r}
+
+# Establim el directori on estan guardats els fitxers a pujar
+dir <- getwd()
+setwd(dir)
+
+
 # Pujada dels fitxers train i test
-train <- read.csv("./fitxers/train.csv", sep = ",", stringsAsFactors = FALSE)
-test <- read.csv("./fitxers/test.csv", sep=",", stringsAsFactors = FALSE)
+train <- read.csv("../Fitxers/train.csv", sep = ",", stringsAsFactors = FALSE)
+
+test <- read.csv("../Fitxers/test.csv", sep=",", stringsAsFactors = FALSE)
 
 # Afegim el camp file_origin per tenir una traçabilitat ràpida
 train$file_origin = 'train'
@@ -65,6 +73,39 @@ ds_titanic <- bind_rows(train, test)
 # Mirem l'estructura de les dades
 str(ds_titanic)
 ```
+## Indicacions sobre nomenclatures de Data Sets
+
+Durant el transcurs dels tractaments es creen una colla de conjunts de dades.
+
+Resumirem els que aniran apareixent:
+
+train: Obtingut a partir de la càrrega del csv entregat original anomenat 'train.csv'. S'emprarà per entrenar i validar models
+
+test:  Obtingut a partir de la càrrega del csv entregat original anomenat 'test.csv'. S'emprarà per l'exercici Kaggle on es demanar predir la supervivència.
+
+A efectes de tractament conjunt:
+
+ds_titanic: obtingut a partir de la unió de train i test (incloent un camp que origen que ens indica si la mostra prové del fitxer train o test)
+
+ds_titanic_train: es el fitxer train amb tan sols aquells registres amb origen fitxer train.csv
+
+ds_titanic_test: es el fitxer test amb tan sols aquells registres amb origen fitxer test.csv
+
+training_sub: del ds_titanic_train filtrem i ens quedem tan sols amb els camps que finalment emprarem i que serà a partir del qual crearem el dataset per entrenar i validar els models. N'obtindrem:
+
+training_set
+
+test_set
+
+
+
+
+
+
+
+
+
+
 
 ```{r}
 # Resum de les dades
@@ -408,10 +449,10 @@ Veiem que dels passatgers que no van sobreviure, els solitaris són els que meny
 
 ```{r}
 # Guardem el fitxer train net creat
-write.csv(ds_titanic_train,file="train_net.csv",row.names = T)
+write.csv(ds_titanic_train,file="../Fitxers/train_net.csv",row.names = T)
 
 # Guardem el fitxer test net creat
-write.csv(ds_titanic_test,file="test_net.csv",row.names = T)
+write.csv(ds_titanic_test,file="../Fitxers/test_net.csv",row.names = T)
 ```
 
 # Normalitat i homoscedasticitat
@@ -774,6 +815,7 @@ passatger_individual <- prediccio_base[71,]
 rf_kaggle <- predict(rf_model,passatger_individual)
 passatger_individual$Survived <- rf_kaggle
 head(passatger_individual)
+
 ```
 
 Aplicant el model amb millor precisió, el Random Forest Classification, pel passatger 71 amb PassatgerId = 962, del qual en desconeixem la supervivència, ens prediu que sobreviurà. 
@@ -784,8 +826,228 @@ Finalment, realitzem una predicció global. És a dir, realitzem una predicció 
 rf_kaggle<-predict(rf_model,ds_titanic_test)
 ds_titanic_test$Survived<-rf_kaggle
 head(ds_titanic_test)
+
 ```
 Guardem el resultat de les prediccions totals en un fitxer csv.
 ```{r}
-write.csv(ds_titanic_test[,c(1,2)],file="test_amb_prediccions.csv", row.names=FALSE)
+write.csv(ds_titanic_test[,c(1,2)],file="../Fitxers/test_amb_prediccions.csv", row.names=FALSE)
 ```
+
+# Gràfiques Adicionals
+
+```{r}
+levels(ds_titanic_train$Survived)<-c('No','Si')
+levels(ds_titanic_test$Survived)<-c('No','Si')
+
+```
+
+## Distibució de la supervivència en relació al Sexe, Classe i Edat
+
+```{r}
+#Distibució de la supervivència en relació al Sexe, Classe i Edat
+
+#Gràfiques entrenament (ds_titanic_train)
+
+ggplot(data =ds_titanic_train, aes(x=Pclass, fill=Sex)) + geom_bar(position="fill")+
+         facet_wrap(~Age.factor) + labs(Y= "Percentatge", x= "Classe") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Sexe per classe i edat (Entrenament)")
+
+#Gràfiques predicció (ds_titanic_test)       
+
+
+ggplot(data =ds_titanic_test, aes(x=Pclass, fill=Sex)) + geom_bar(position="fill")+
+         facet_wrap(~Age.factor) + labs(Y= "Percentatge", x= "Classe") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Sexe per classe i edat (Predicció)")
+
+```
+
+## Supervivència per Sexe
+```{r}
+#Supervivència per Sexe
+
+#Gràfiques entrenament (ds_titanic_train)
+
+ggplot(data =ds_titanic_train, aes(x=Sex, fill=Survived)) + geom_bar(width=0.5)+
+         labs(Y= "Freqüència", x= "Sexe") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Supervivència per Sexe (Entrenament)")
+
+#Gràfiques predicció (ds_titanic_test)       
+
+
+ggplot(data =ds_titanic_test, aes(x=Sex, fill=Survived)) + geom_bar(width=0.5)+
+         labs(Y= "Freqüència", x= "Sexe") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Supervivència per Sexe (Predicció)")
+
+```
+
+## Supervivència per Classe
+```{r}
+#Supervivència per Classe
+
+#Gràfiques entrenament (ds_titanic_train)
+
+ggplot(data =ds_titanic_train, aes(x=Pclass, fill=Survived)) + geom_bar(width=0.5)+
+         labs(Y= "Freqüència", x= "Classe") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Supervivència per Classe (Entrenament)")
+
+#Gràfiques predicció (ds_titanic_test)       
+
+
+ggplot(data =ds_titanic_test, aes(x=Pclass, fill=Survived)) + geom_bar(width=0.5)+
+         labs(Y= "Freqüència", x= "Classe") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Supervivència per Classe (Predicció)")
+
+```
+
+
+## Supervivència per Edat
+```{r}
+#Supervivència per Classe
+
+#Gràfiques entrenament (ds_titanic_train)
+
+ggplot(data =ds_titanic_train, aes(x=Age.factor, fill=Survived)) + geom_bar(width=0.5)+
+         labs(Y= "Freqüència", x= "Classe") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Supervivència per Edat (Entrenament)")
+
+#Gràfiques predicció (ds_titanic_test)       
+
+
+ggplot(data =ds_titanic_test, aes(x=Age.factor, fill=Survived)) + geom_bar(width=0.5)+
+         labs(Y= "Freqüència", x= "Classe") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Supervivència per Edat (Predicció)")
+
+```
+
+## Supervivència per Sexe i Classe
+
+```{r}
+#Supervivència per Sexe i Classe
+
+#Gràfiques entrenament (ds_titanic_train)
+
+ggplot(data =ds_titanic_train, aes(x=Sex, fill=Survived)) + geom_bar(position="fill")+
+         facet_wrap(~Pclass) + labs(Y= "Percentatge", x= "Sexe") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Supervivència per sexe i classe (Entrenament)")
+
+#Gràfiques predicció (ds_titanic_test)       
+
+
+ggplot(data =ds_titanic_test, aes(x=Sex, fill=Survived)) + geom_bar(position="fill")+
+         facet_wrap(~Pclass) + labs(Y= "Percentatge", x= "Sexe") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Supervivència per sexe i classe (Predicció)")
+
+```
+
+## Supervivència per Classe i Edat
+
+```{r}
+#Supervivència per Sexe i Classe
+
+#Gràfiques entrenament (ds_titanic_train)
+
+ggplot(data =ds_titanic_train, aes(x=Pclass, fill=Survived)) + geom_bar(position="fill")+
+         facet_wrap(~Age.factor) + labs(Y= "Percentatge", x= "Class") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Supervivència per Classe i Edat (Entrenament)")
+
+#Gràfiques predicció (ds_titanic_test)       
+
+
+ggplot(data =ds_titanic_test, aes(x=Pclass, fill=Survived)) + geom_bar(position="fill")+
+         facet_wrap(~Age.factor) + labs(Y= "Percentatge", x= "Class") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Supervivència per Classe i Edat (Predicció)")
+
+```
+
+
+## Supervivència per Sexe i Edat
+
+```{r}
+#Supervivència per Sexe i Classe
+
+#Gràfiques entrenament (ds_titanic_train)
+
+ggplot(data =ds_titanic_train, aes(x=Sex, fill=Survived)) + geom_bar(position="fill")+
+         facet_wrap(~Age.factor) + labs(Y= "Percentatge", x= "Sexe") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Supervivència per Sexe i Edat (Entrenament)")
+
+#Gràfiques predicció (ds_titanic_test)       
+
+ggplot(data =ds_titanic_test, aes(x=Sex, fill=Survived)) + geom_bar(position="fill")+
+         facet_wrap(~Age.factor) + labs(Y= "Percentatge", x= "Sexe") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Supervivència per Sexe i Edat (Predicció)")
+
+```
+
+## Supervivència per MidaFamilia i Titol
+
+```{r}
+#Supervivència per Sexe i Classe
+#Supervivència per MidaFamilia i Titol
+
+#Gràfiques entrenament (ds_titanic_test)
+
+ggplot(data =ds_titanic_train, aes(x=FamilySize.factor, fill=Survived)) + geom_bar(position="fill")+
+         facet_wrap(~Title) + labs(Y= "Percentatge", x= "FamilySize") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Supervivència per MidaFamilia i Títol (Entrenament)")
+
+#Gràfiques predicció (ds_titanic_test)       
+
+ggplot(data =ds_titanic_test, aes(x=FamilySize.factor, fill=Survived)) + geom_bar(position="fill")+
+         facet_wrap(~Title) + labs(Y= "Percentatge", x= "FamilySize") +
+         theme(legend.position = "bottom",
+               legend.background = element_rect(fill="lightgrey", size=0.5, linetype ="solid",colour="black")) +
+  ggtitle("Supervivència per MidaFamilia i Títol (Predicció)")
+
+
+```
+
+## Percentatges de Superivents i morts
+
+
+```{r}
+
+#Dades entrenament (ds_titanic_train)
+
+taula_tr <- setDT(ds_titanic_train)[,.(Percentatge=100*.N/nrow(ds_titanic_train)), by = Survived]
+taula_tr
+
+#Dades predicció (ds_titanic_test)
+
+taula_test <- setDT(ds_titanic_test)[,.(Percentatge=100*.N/nrow(ds_titanic_test)), by = Survived]
+taula_test
+
+
+```
+
+
